@@ -76,7 +76,7 @@ async function run(): Promise<void> {
     const branch = branchQueryService.getBranch();
     core.debug(`Branch取得結果: ${JSON.stringify(branch)}`);
 
-    const issueNumber = branch.getIssueNumber(withInput.branchPrefix);
+    //const issueNumber = branch.getIssueNumber(withInput.branchPrefix);
 
     core.debug(`抽出されたイシュー番号: ${issueNumber}`);
     core.debug(`イシュー番号の型: ${typeof issueNumber}`);
