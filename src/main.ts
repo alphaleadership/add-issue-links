@@ -100,6 +100,7 @@ async function run(): Promise<void> {
       repo: context.repo.repo,
       state: 'open',
     });
+    core.debug(JSON.stringify(openIssues,null,2))
 
     const issueNumbers = openIssues.map(issue => issue.number);
     core.debug(`Issues ouvertes trouvées: ${issueNumbers.join(', ')}`);
