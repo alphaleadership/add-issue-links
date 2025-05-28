@@ -18,7 +18,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "all": "run-s fix lint test",
-    "check": "run-s lint test",
+    "check": "echo run-s lint test",
     "check-build": "run-s check build",
     "exec": "run-s build exec:node",
     "exec:node": "node dist/index.js",

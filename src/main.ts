@@ -10,9 +10,9 @@ import { Repository } from './domain/repository/Repository';
 import { PullRequestRecordCoordinator } from './application/coordinator/PullRequestRecordCoordinator';
 import { PullRequestQueryService } from './application/service/PullRequestQueryService';
 import { LinkStyle } from './domain/linkStyle/LinkStyle';
-import { ResolveWord } from './domain/pullRequest/pullRequestBody/issueLinkSection/resolveWord/ResolveWord';
 import { Header } from './domain/pullRequest/pullRequestBody/issueLinkSection/header/Header';
 import { AssignIssueToPullRequestCreator } from './domain/assign/AssignIssueToPullRequestCreator';
+import { ResolveWord } from './domain/pullRequest/pullRequestBody/issueLinkSection/resolveWord/ResolveWord';
 
 async function run(): Promise<void> {
   try {
@@ -22,7 +22,6 @@ async function run(): Promise<void> {
       position: core.getInput('position', { required: false }),
       header: core.getInput('header', { required: false }),
       resolve: core.getInput('resolve', { required: false }),
-      resolveWord: core.getInput('resolve-word', { required: false }),
       repository: core.getInput('repository', { required: false }),
       linkStyle: core.getInput('link-style', { required: false }),
       assignPrCreatorToIssue: core.getInput('assign-pr-creator-to-issue', {
@@ -101,10 +100,8 @@ async function run(): Promise<void> {
         withInput.header
           ? new Header(withInput.header)
           : new Header('# Related Issue'),
-        Resolve.buildFromString(withInput.resolve) ?? Resolve.false(),
-        withInput.resolveWord
-          ? new ResolveWord(withInput.resolveWord)
-          : new ResolveWord(),
+        Resolve.true(),
+        new ResolveWord(),
         Repository.build(withInput.repository),
         LinkStyle.build(withInput.linkStyle) ?? LinkStyle.body(),
       );
