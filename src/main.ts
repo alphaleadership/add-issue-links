@@ -78,8 +78,8 @@ async function run(): Promise<void> {
 
     //const issueNumber = branch.getIssueNumber(withInput.branchPrefix);
 
-    core.debug(`抽出されたイシュー番号: ${issueNumber}`);
-    core.debug(`イシュー番号の型: ${typeof issueNumber}`);
+   // core.debug(`抽出されたイシュー番号: ${issueNumber}`);
+   // core.debug(`イシュー番号の型: ${typeof issueNumber}`);
 
     const dataStore = new PullRequestDataStore(getOctokit(withInput.token));
     const coordinator = new PullRequestRecordCoordinator(
