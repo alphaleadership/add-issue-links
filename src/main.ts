@@ -81,18 +81,34 @@ async function run(): Promise<void> {
    // core.debug(`抽出されたイシュー番号: ${issueNumber}`);
    // core.debug(`イシュー番号の型: ${typeof issueNumber}`);
 
-    const dataStore = new PullRequestDataStore(getOctokit(withInput.token));
+    const octokit = getOctokit(withInput.token);
+    const dataStore = new PullRequestDataStore(octokit);
     const coordinator = new PullRequestRecordCoordinator(
       new PullRequestRecordService(dataStore),
       new PullRequestQueryService(dataStore),
     );
 
-    // Récupérer toutes les issues ouvertes
-    const openIssues = await dataStore.getOpenIssues(context.repo.owner, context.repo.repo);
-    core.debug(`Issues ouvertes trouvées: ${openIssues.join(', ')}`);
+    // Récupérer le numéro de la pull request
+    const prNumber = context.payload.pull_request?.number;
+    if (!prNumber) {
+      throw new Error('Pull request number not found in context');
+    }
+
+    // Récupérer toutes les issues ouvertes avec Octokit
+    const { data: openIssues } = await octokit.rest.issues.listForRepo({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      state: 'open',
+    });
+
+    const issueNumbers = openIssues.map(issue => issue.number);
+    core.debug(`Issues ouvertes trouvées: ${issueNumbers.join(', ')}`);
 
     // Lier chaque issue ouverte à la pull request
-    for (const issueNumber of openIssues) {
+    for (const issueNumber of issueNumbers) {
+      // Ne pas lier la PR à elle-même
+      if (issueNumber === prNumber) continue;
+
       coordinator.addIssueLink(
         context,
         issueNumber,
@@ -122,7 +138,7 @@ async function run(): Promise<void> {
       }
     }
 
-    core.info(`Added references to all open issues in pull request.`);
+    core.info(`Added references to all open issues in pull request #${prNumber}.`);
   } catch (error) {
     if (error instanceof BranchIssueNumNotFound)
       return core.info(`BranchIssueNumNotFound: ${error.message}`);
