@@ -1,0 +1,21 @@
+name: 'Auto Link All Open Issues to PR'
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  auto-link-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Auto link all open issues to PR
+        uses: ./
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
+          position: 'top'
+          resolve: 'true'
+          link-style: 'body'
+          assign-pr-creator-to-issue: 'true'

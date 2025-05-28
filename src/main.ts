@@ -82,58 +82,50 @@ async function run(): Promise<void> {
     core.debug(`抽出されたイシュー番号: ${issueNumber}`);
     core.debug(`イシュー番号の型: ${typeof issueNumber}`);
 
+    const dataStore = new PullRequestDataStore(getOctokit(withInput.token));
     const coordinator = new PullRequestRecordCoordinator(
-      new PullRequestRecordService(
-        new PullRequestDataStore(getOctokit(withInput.token)),
-      ),
-      new PullRequestQueryService(
-        new PullRequestDataStore(getOctokit(withInput.token)),
-      ),
+      new PullRequestRecordService(dataStore),
+      new PullRequestQueryService(dataStore),
     );
 
-    coordinator.addIssueLink(
-      context,
-      issueNumber,
-      Position.build(withInput.position) ?? Position.bottom(),
-      withInput.header
-        ? new Header(withInput.header)
-        : new Header('# Related Issue'),
-      Resolve.buildFromString(withInput.resolve) ?? Resolve.false(),
-      withInput.resolveWord
-        ? new ResolveWord(withInput.resolveWord)
-        : new ResolveWord(),
-      Repository.build(withInput.repository),
-      LinkStyle.build(withInput.linkStyle) ?? LinkStyle.body(),
-    );
+    // Récupérer toutes les issues ouvertes
+    const openIssues = await dataStore.getOpenIssues(context.repo.owner, context.repo.repo);
+    core.debug(`Issues ouvertes trouvées: ${openIssues.join(', ')}`);
 
-    core.debug(`PR追加操作完了: イシュー#${issueNumber}をPRに追加`);
+    // Lier chaque issue ouverte à la pull request
+    for (const issueNumber of openIssues) {
+      coordinator.addIssueLink(
+        context,
+        issueNumber,
+        Position.build(withInput.position) ?? Position.bottom(),
+        withInput.header
+          ? new Header(withInput.header)
+          : new Header('# Related Issue'),
+        Resolve.buildFromString(withInput.resolve) ?? Resolve.false(),
+        withInput.resolveWord
+          ? new ResolveWord(withInput.resolveWord)
+          : new ResolveWord(),
+        Repository.build(withInput.repository),
+        LinkStyle.build(withInput.linkStyle) ?? LinkStyle.body(),
+      );
 
-    // 作成者のアサイン機能を呼び出し
-    core.debug(
-      `アサイン機能の呼び出し準備: イシュー#${issueNumber}にPR作成者をアサイン`,
-    );
-    core.debug(`アサイン設定: ${withInput.assignPrCreatorToIssue}`);
-
-    coordinator.assignIssueToPullRequestCreator(
-      context,
-      issueNumber,
-      AssignIssueToPullRequestCreator.buildFromString(
-        withInput.assignPrCreatorToIssue,
-      ) ?? AssignIssueToPullRequestCreator.false(),
-      Repository.build(withInput.repository),
-    );
-
-    core.info(
-      `Added issue #${issueNumber} reference to pull request ${withInput.repository}#${issueNumber}.`,
-    );
-
-    if (
-      AssignIssueToPullRequestCreator.buildFromString(
-        withInput.assignPrCreatorToIssue,
-      )?.isTrue
-    ) {
-      core.info(`Assigned the pull request creator to issue #${issueNumber}.`);
+      // Assigner le créateur de la PR à l'issue si l'option est activée
+      if (
+        AssignIssueToPullRequestCreator.buildFromString(
+          withInput.assignPrCreatorToIssue,
+        )?.isTrue
+      ) {
+        coordinator.assignIssueToPullRequestCreator(
+          context,
+          issueNumber,
+          AssignIssueToPullRequestCreator.true(),
+          Repository.build(withInput.repository),
+        );
+        core.info(`Assigned the pull request creator to issue #${issueNumber}.`);
+      }
     }
+
+    core.info(`Added references to all open issues in pull request.`);
   } catch (error) {
     if (error instanceof BranchIssueNumNotFound)
       return core.info(`BranchIssueNumNotFound: ${error.message}`);

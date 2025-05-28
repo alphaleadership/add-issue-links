@@ -174,4 +174,18 @@ export class PullRequestDataStore implements PullRequestRepository {
       throw error;
     }
   };
+
+  /**
+   * すべてのオープンなイシューを取得します
+   * @param owner - リポジトリオーナー
+   * @param repo - リポジトリ名
+   */
+  getOpenIssues = async (owner: string, repo: string) => {
+    const response = await this.issuesClient.listForRepo({
+      owner,
+      repo,
+      state: 'open',
+    });
+    return response.data.map(issue => issue.number);
+  };
 }

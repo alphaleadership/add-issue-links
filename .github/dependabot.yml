@@ -9,8 +9,7 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
-    assignees:
-      - "tktcorporation"
+    
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -19,8 +18,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    assignees:
-      - "tktcorporation"
+    
     commit-message:
       prefix: "chore"
       include: "scope"
