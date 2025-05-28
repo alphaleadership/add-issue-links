@@ -14,6 +14,13 @@ import { Header } from './domain/pullRequest/pullRequestBody/issueLinkSection/he
 import { AssignIssueToPullRequestCreator } from './domain/assign/AssignIssueToPullRequestCreator';
 import { ResolveWord } from './domain/pullRequest/pullRequestBody/issueLinkSection/resolveWord/ResolveWord';
 
+interface GitHubIssue {
+  number: number;
+  title: string;
+  state: string;
+  [key: string]: any;
+}
+
 async function run(): Promise<void> {
   try {
     const withInput = {
@@ -94,16 +101,34 @@ async function run(): Promise<void> {
       throw new Error('Pull request number not found in context');
     }
 
-    // Récupérer toutes les issues ouvertes avec Octokit
-    const { data: openIssues } = await octokit.rest.issues.listForRepo({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      state: 'open',
-    });
-    core.debug(JSON.stringify(openIssues,null,2))
+    // Récupérer toutes les issues ouvertes avec Octokit (avec pagination)
+    let allIssues: GitHubIssue[] = [];
+    let page = 1;
+    const perPage = 100; // Nombre maximum d'issues par page
 
-    const issueNumbers = openIssues.map(issue => issue.number);
-    core.debug(`Issues ouvertes trouvées: ${issueNumbers.join(', ')}`);
+    while (true) {
+      const { data: issues } = await octokit.rest.issues.listForRepo({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        state: 'open',
+        per_page: perPage,
+        page: page,
+      });
+
+      if (issues.length === 0) break;
+
+      allIssues = allIssues.concat(issues);
+      core.debug(`Page ${page}: ${issues.length} issues trouvées`);
+
+      if (issues.length < perPage) break;
+      page++;
+    }
+
+    core.debug(`Total des issues trouvées: ${allIssues.length}`);
+    core.debug(JSON.stringify(allIssues, null, 2));
+
+    const issueNumbers = allIssues.map(issue => issue.number);
+    core.debug(`Numéros des issues: ${issueNumbers.join(', ')}`);
 
     // Lier chaque issue ouverte à la pull request
     for (const issueNumber of issueNumbers) {
